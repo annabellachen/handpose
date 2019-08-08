@@ -20,9 +20,8 @@ shuffle = False
 di = MSRA15Importer(train_root, cacheDir='../../cache/MSRA/', refineNet=None)
 
 Seq_all = []
-#MID = args.test_sub
-MID=0
-for seq in range(1):
+MID = args.test_sub
+for seq in range(9):
     shuffle = True
     if seq == MID:
         shuffle = False

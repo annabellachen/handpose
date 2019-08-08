@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(description='set test subject')
 parser.add_argument('--test-sub', type=int, default = None)
 args = parser.parse_args()
 
-train_root='/home/dumyy/data/msra/'
+train_root='/content/drive/My Drive/KNOWLEDGE ENGINEERING/KE Semester 4/Core Course/CA2 (Matthew)/cvpr15_MSRAHandGestureDB/'
 shuffle=False
 di = MSRA15Importer(train_root, cacheDir='../../cache/MSRA/', refineNet=None)
 

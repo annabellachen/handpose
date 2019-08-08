@@ -174,7 +174,7 @@ with tf.Session() as sess:
     training_batch = (zip(range(0, train_num, batch_size),
                           range(batch_size, train_num + 1, batch_size)))
     print training_batch
-    for itrain in range(200):
+    for itrain in range(20):
         kpv = 0.6
 
         c = list(zip(cubes_train, coms_train, Ms_train, gt3Dcrops_train, imgs_train))

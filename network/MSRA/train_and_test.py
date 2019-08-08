@@ -15,13 +15,13 @@ args = parser.parse_args()
 rng = np.random.RandomState(23455)
 import tensorflow as tf
 
-train_root = '/home/dumyy/DUMYY_DATA/msra/'
+train_root = '/content/drive/My Drive/KNOWLEDGE ENGINEERING/KE Semester 4/Core Course/CA2 (Matthew)/cvpr15_MSRAHandGestureDB/'
 shuffle = False
 di = MSRA15Importer(train_root, cacheDir='../../cache/MSRA/', refineNet=None)
 
 Seq_all = []
 MID = args.test_sub
-for seq in range(9):
+for seq in range(1):
     shuffle = True
     if seq == MID:
         shuffle = False

@@ -15,7 +15,7 @@ args = parser.parse_args()
 rng = np.random.RandomState(23455)
 import tensorflow as tf
 
-train_root = '/content/drive/My Drive/KNOWLEDGE ENGINEERING/KE Semester 4/Core Course/CA2 (Matthew)/cvpr15_MSRAHandGestureDB/'
+train_root = '/content/drive/My Drive/cvpr15_MSRAHandGestureDB/'
 shuffle = False
 di = MSRA15Importer(train_root, cacheDir='../../cache/MSRA/', refineNet=None)
 

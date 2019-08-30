@@ -7,7 +7,11 @@ import numpy as np
 from netlib.basemodel import basenet2
 from data.transformations import transformPoints2D
 import argparse
-
+import net.scalenet
+import numpy
+from data.dataset import MSRA15Dataset
+from net.scalenet import ScaleNetParams, ScaleNet
+import gc
 parser = argparse.ArgumentParser(description='set test subject')
 parser.add_argument('--test-sub', type=int, default = None)
 args = parser.parse_args()
@@ -15,7 +19,7 @@ args = parser.parse_args()
 rng = np.random.RandomState(23455)
 import tensorflow as tf
 
-train_root = '/content/drive/My Drive/cvpr15_MSRAHandGestureDB/'
+train_root = '/jet/prs/my_data/'
 shuffle = False
 di = MSRA15Importer(train_root, cacheDir='../../cache/MSRA/', refineNet=None)
 
@@ -33,6 +37,66 @@ for seq in range(9):
 Seq_test_raw = Seq_all.pop(MID)
 Seq_test = Seq_test_raw.data
 Seq_train = [seq_data for seq_ in Seq_all for seq_data in seq_.data]
+
+
+#////////////    
+trainDataSet = MSRA15Dataset(Seq_all, localCache=False)
+nSamp = numpy.sum([len(s.data) for s in Seq_all])
+d1, g1 = trainDataSet.imgStackDepthOnly(Seq_all[0].name)
+print(len(d1), len(g1))
+train_data = numpy.ones((nSamp, d1.shape[1], d1.shape[2], d1.shape[3]), dtype='float32')
+train_gt3D = numpy.ones((nSamp, g1.shape[1], g1.shape[2]), dtype='float32')
+train_data_com = numpy.ones((nSamp, 3), dtype='float32')
+train_data_M = numpy.ones((nSamp, 3, 3), dtype='float32')
+train_data_cube = numpy.ones((nSamp, 3), dtype='float32')
+#del d1, g1
+gc.collect()
+gc.collect()
+gc.collect()
+oldIdx = 0
+for seq in Seq_all:
+    d, g = trainDataSet.imgStackDepthOnly(seq.name)
+    train_data[oldIdx:oldIdx+d.shape[0]] = d
+    train_gt3D[oldIdx:oldIdx+d.shape[0]] = g
+    train_data_com[oldIdx:oldIdx+d.shape[0]] = numpy.asarray([da.com for da in seq.data])
+    train_data_M[oldIdx:oldIdx+d.shape[0]] = numpy.asarray([da.T for da in seq.data])
+    train_data_cube[oldIdx:oldIdx+d.shape[0]] = numpy.asarray([seq.config['cube']]*d.shape[0])
+    oldIdx += d.shape[0]
+    del d, g
+    gc.collect()
+    gc.collect()
+    gc.collect()
+dsize = (int(train_data.shape[2]//2), int(train_data.shape[3]//2))
+xstart = int(train_data.shape[2]/2-dsize[0]/2)
+xend = xstart + dsize[0]
+ystart = int(train_data.shape[3]/2-dsize[1]/2)
+yend = ystart + dsize[1]
+train_data2 = train_data[:, :, ystart:yend, xstart:xend]
+
+dsize = (int(train_data.shape[2]//4), int(train_data.shape[3]//4))
+xstart = int(train_data.shape[2]/2-dsize[0]/2)
+xend = xstart + dsize[0]
+ystart = int(train_data.shape[3]/2-dsize[1]/2)
+yend = ystart + dsize[1]
+train_data4 = train_data[:, :, ystart:yend, xstart:xend]
+
+comrefNetParams = ScaleNetParams(type=1, nChan=1, wIn=96, hIn=96, batchSize=1, resizeFactor=2, numJoints=1, nDims=3)
+comrefNetParams.loadFile = "../../ptm/net_MSRA15_COM_AUGMENT.pkl"
+poseNet = ScaleNet(numpy.random.RandomState(23455), cfgParams=comrefNetParams)
+train_data=numpy.ndarray.astype(train_data,dtype='float64')
+train_data2=numpy.ndarray.astype(train_data2,dtype='float64')
+train_data4=numpy.ndarray.astype(train_data4,dtype='float64')
+#Seq_all list of sequence data
+gt3D=[]
+for i in xrange(len(Seq_all)): 
+    gt3D_temp = [j.gt3Dorig[di.crop_joint_idx].reshape(1, 3) for j in Seq_all[i].data]
+    gt3D.extend(gt3D_temp)
+jts = poseNet.computeOutput([train_data, train_data2, train_data4])
+joints = []
+for i in xrange(train_data.shape[0]):
+    joints.append(jts[i].reshape(1, 3)*(Seq_all[0].config['cube'][2]/2.) + Seq_all[0].data[i].com)
+#//////////
+
 
 train_num = len(Seq_train)
 cubes_train = np.asarray([d.cube for d in Seq_train], 'float32')
@@ -97,7 +161,7 @@ Kernels=tf.placeholder(dtype=tf.float32,shape=(None,3,3))
 kp=tf.placeholder(dtype=tf.float32,shape=None)
 
 
-batch_size = 128
+batch_size = 2
 last_e = 100
 outdims=(21,6,15)
 
